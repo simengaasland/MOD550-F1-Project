@@ -1,12 +1,15 @@
+'''
+This module contains the DataAquisition class
+'''
+
 import fastf1 as f1
 import pandas as pd
 import numpy as np
-from datetime import timedelta
 import matplotlib.pyplot as plt
 
 class DataAquisition:
     """"
-    A class with two functions that...
+    A fitting class docstring
     """
 
     def __init__(self, gp, year):
@@ -85,55 +88,66 @@ class DataAquisition:
 
             for i in range(len(drivers)):
                 #Collect all laps completed by driver
-                driver_laps = list_of_fp_sessions[session][list_of_fp_sessions[session]['DriverNumber'] == drivers[i]]
+                driver_laps = list_of_fp_sessions[session][
+                    list_of_fp_sessions[session]['DriverNumber'] == drivers[i]
+                    ]
 
                 #Remove deleted laps and NaN lap times
-                valid_driver_laps = driver_laps[driver_laps['Deleted'].astype(bool) == False].dropna(subset=['LapTime'])
+                valid_driver_laps = driver_laps[
+                    driver_laps['Deleted'].astype(bool) == False].dropna(subset=['LapTime'])
 
                 #Temp list to store laps in total seconds
                 driver_lap_times_sec = []
 
                 #Converting drivers laps to seconds
                 for j in range(len(valid_driver_laps)):
-                    driver_lap_times_sec.append(valid_driver_laps.iloc[j]['LapTime'].total_seconds())
+                    driver_lap_times_sec.append(
+                        valid_driver_laps.iloc[j]['LapTime'].total_seconds()
+                        )
 
                 #Sort drivers lap times. Fastest lap is at [0]
                 driver_lap_times_sec.sort()
 
                 #Add drivers fastest lap to dataframe
-                valid_driver_fastest_lap.loc[len(valid_driver_fastest_lap)] = [drivers[i],f'FP{session + 1}' , driver_lap_times_sec[0]]
+                valid_driver_fastest_lap.loc[
+                    len(valid_driver_fastest_lap)] = [drivers[i],
+                                                      f'FP{session + 1}' ,
+                                                      driver_lap_times_sec[0]
+                                                      ]
 
         #Sort dataframe before returning
-        valid_driver_fastest_lap = valid_driver_fastest_lap.sort_values(by = 'FastestLap').reset_index(drop = True)
+        valid_driver_fastest_lap = valid_driver_fastest_lap.sort_values(
+            by = 'FastestLap'
+            ).reset_index(drop = True)
 
         return valid_driver_fastest_lap
 
     def plot_histogram(self, bins = 12):
-            '''
-            Plots a histogram of the lastest laps
+        '''
+        Plots a histogram of the lastest laps
 
-            Input
-            ------
-            bins: int
-                Amount of bins in the histogram plot
-            '''
-            df = self.get_fastest_laps()
+        Input
+        ------
+        bins: int
+            Amount of bins in the histogram plot
+        '''
+        df = self.get_fastest_laps()
 
-            plt.hist(df['FastestLap'], bins = bins, color = 'green', edgecolor = 'black')
-            plt.xlabel("Time [s]")
-            plt.ylabel("Frequency")
-            plt.title(f"Fastest laps {self.gp} GP {self.year} FP1/FP2/FP3")
-            plt.show()
+        plt.hist(df['FastestLap'], bins = bins, color = 'green', edgecolor = 'black')
+        plt.xlabel("Time [s]")
+        plt.ylabel("Frequency")
+        plt.title(f"Fastest laps {self.gp} GP {self.year} FP1/FP2/FP3")
+        plt.show()
 
     def plot_pmf(self, bins):
         '''
-            Plots the Probability Mass Function (PMF)
+        Plots the Probability Mass Function (PMF)
 
-            Input
-            ------
-            bins: int
-                Amount of bins in the PMF plot
-            '''
+        Input
+        ------
+        bins: int
+            Amount of bins in the PMF plot
+        '''
         df = self.get_fastest_laps()
         frequency_count, bin_edges = np.histogram(df['FastestLap'], bins = bins)
 
@@ -149,13 +163,13 @@ class DataAquisition:
 
     def plot_cumulative_pmf(self, bins):
         '''
-            Plots the cumulative Probability Mass Function (PMF)
+        Plots the cumulative Probability Mass Function (PMF)
 
-            Input
-            ------
-            bins: int
-                Amount of bins in the PMF plot
-            '''
+        Input
+        ------
+        bins: int
+            Amount of bins in the PMF plot
+        '''
 
         df = self.get_fastest_laps()
         frequency_count, bin_edges = np.histogram(df['FastestLap'], bins = bins)
