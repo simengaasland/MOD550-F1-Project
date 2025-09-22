@@ -100,10 +100,13 @@ class DataAquisition:
                 driver_lap_times_sec = []
 
                 #Converting drivers laps to seconds
-                for j in range(len(valid_driver_laps)):
-                    driver_lap_times_sec.append(
-                        valid_driver_laps.iloc[j]['LapTime'].total_seconds()
-                        )
+                if len(valid_driver_laps) != 0:
+                    for j in range(len(valid_driver_laps)):
+                        driver_lap_times_sec.append(
+                            valid_driver_laps.iloc[j]['LapTime'].total_seconds()
+                            )
+                else:
+                    driver_lap_times_sec.append(0)
 
                 #Sort drivers lap times. Fastest lap is at [0]
                 driver_lap_times_sec.sort()
