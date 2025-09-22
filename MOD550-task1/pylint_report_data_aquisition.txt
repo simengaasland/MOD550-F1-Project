@@ -1,9 +1,7 @@
 ************* Module data_aquisition
-data_aquisition.py:85:8: C0200: Consider using enumerate instead of iterating with range and len (consider-using-enumerate)
-data_aquisition.py:89:12: C0200: Consider using enumerate instead of iterating with range and len (consider-using-enumerate)
-data_aquisition.py:97:20: C0121: Comparison 'driver_laps['Deleted'].astype(bool) == False' should be 'driver_laps['Deleted'].astype(bool) is False' if checking for the singleton value False, or 'not driver_laps['Deleted'].astype(bool)' if testing for falsiness (singleton-comparison)
+data_aquisition.py:94:48: C0121: Comparison 'driver_laps['Deleted'].astype(bool) == False' should be 'driver_laps['Deleted'].astype(bool) is False' if checking for the singleton value False, or 'not driver_laps['Deleted'].astype(bool)' if testing for falsiness (singleton-comparison)
 data_aquisition.py:184:8: C0200: Consider using enumerate instead of iterating with range and len (consider-using-enumerate)
 
--------------------------------------------------------------------
-Your code has been rated at 9.38/10 (previous run: 10.00/10, -0.62)
+------------------------------------------------------------------
+Your code has been rated at 9.69/10 (previous run: 9.38/10, +0.32)
 
