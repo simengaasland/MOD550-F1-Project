@@ -3,110 +3,109 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta
 import matplotlib.pyplot as plt
-import pylint
 
-class DataAquisition: 
-    '''
+class DataAquisition:
+    """"
     A class with two functions that...
-    '''
-    
-    def __init__(self, gp, year): 
+    """
+
+    def __init__(self, gp, year):
         '''
         Input
         ------
-        gp: string 
+        gp: string
             The Grand Prix to collect data from (e.g. 'Monza').
 
-        year: int 
+        year: int
             The year the Grand Prix took place (e.g. 2025).
         '''
         self.gp = gp
         self.year = year
 
-    def get_practice_laps(self): 
+    def get_practice_laps(self):
         '''
-        Collects FP1, FP2 and FP3 data from 
-        the FastF1 API. 
+        Collects FP1, FP2 and FP3 data from
+        the FastF1 API.
 
         Output
         ------
         DataFrame
-            One DataFrame for each session. 
+            One DataFrame for each session.
         '''
-        FP1_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'FP1')
-        FP2_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'FP2')
-        FP3_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'FP3')
+        fp1_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'FP1')
+        fp2_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'FP2')
+        fp3_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'FP3')
 
-        FP1_session.load()
-        FP2_session.load()
-        FP3_session.load()
+        fp1_session.load()
+        fp2_session.load()
+        fp3_session.load()
 
-        df_FP1_session = FP1_session.laps
-        df_FP2_session = FP2_session.laps
-        df_FP3_session = FP3_session.laps
+        df_fp1_session = fp1_session.laps
+        df_fp2_session = fp2_session.laps
+        df_fp3_session = fp3_session.laps
 
-        return df_FP1_session, df_FP2_session, df_FP3_session
+        return df_fp1_session, df_fp2_session, df_fp3_session
 
-    def get_fastest_laps(self): 
+    def get_fastest_laps(self):
         '''
-        Collects FP1, FP2 and FP3 data from 
+        Collects FP1, FP2 and FP3 data from
         the FastF1 API and cleans it. The
-        collect the data from all three 
+        collect the data from all three
         practice sessions. For all session
-        it removes deleted laps and 
-        laps times with NaN-value. For 
-        each driver the function then finds 
-        the fastest lap preformed by that 
-        driver for all three session. At 
+        it removes deleted laps and
+        laps times with NaN-value. For
+        each driver the function then finds
+        the fastest lap preformed by that
+        driver for all three session. At
         last it combines all drivers fastest
-        lap for all three sessions. 
+        lap for all three sessions.
 
         Input
         ------
-        gp: string 
+        gp: string
             The Grand Prix to collect data from (e.g. 'Monza').
 
-        year: int 
+        year: int
             The year the Grand Prix took place (e.g. 2025).
 
         Output
         ------
         DataFrame
-            A DataFrame with driver number, session and lap 
-            time in seconds 
+            A DataFrame with driver number, session and lap
+            time in seconds
         '''
-        list_of_FP_sessions = self.get_practice_laps()
-        
+        list_of_fp_sessions = self.get_practice_laps()
+
         #Empty dataframe with columns for driver and their fastest lap
         valid_driver_fastest_lap = pd.DataFrame(columns=['DriverNumber','Session','FastestLap'])
-        
-        for session in range(len(list_of_FP_sessions)):
-            #Collect all drivers that have completed a lap in FP 
-            drivers = list_of_FP_sessions[session]['DriverNumber'].unique()
-        
+
+        for session in range(len(list_of_fp_sessions)):
+            #Collect all drivers that have completed a lap in FP
+            drivers = list_of_fp_sessions[session]['DriverNumber'].unique()
+
             for i in range(len(drivers)):
                 #Collect all laps completed by driver
-                driver_laps = list_of_FP_sessions[session][list_of_FP_sessions[session]['DriverNumber'] == drivers[i]]
-                
-                #Remove deleted laps and NaN lap times 
+                driver_laps = list_of_fp_sessions[session][list_of_fp_sessions[session]['DriverNumber'] == drivers[i]]
+
+                #Remove deleted laps and NaN lap times
                 valid_driver_laps = driver_laps[driver_laps['Deleted'].astype(bool) == False].dropna(subset=['LapTime'])
-    
-                #Temp list to store laps in total seconds 
+
+                #Temp list to store laps in total seconds
                 driver_lap_times_sec = []
-    
+
                 #Converting drivers laps to seconds
                 for j in range(len(valid_driver_laps)):
                     driver_lap_times_sec.append(valid_driver_laps.iloc[j]['LapTime'].total_seconds())
-    
+
                 #Sort drivers lap times. Fastest lap is at [0]
                 driver_lap_times_sec.sort()
-            
+
                 #Add drivers fastest lap to dataframe
                 valid_driver_fastest_lap.loc[len(valid_driver_fastest_lap)] = [drivers[i],f'FP{session + 1}' , driver_lap_times_sec[0]]
 
-        #Sort dataframe before returning 
-        valid_driver_fastest_lap = valid_driver_fastest_lap.sort_values(by = 'FastestLap').reset_index(drop = True)    
-        
+        #Sort dataframe before returning
+        valid_driver_fastest_lap = valid_driver_fastest_lap.sort_values(by = 'FastestLap').reset_index(drop = True)
+
         return valid_driver_fastest_lap
 
     def plot_histogram(self, bins = 12):
@@ -119,7 +118,7 @@ class DataAquisition:
                 Amount of bins in the histogram plot
             '''
             df = self.get_fastest_laps()
-            
+
             plt.hist(df['FastestLap'], bins = bins, color = 'green', edgecolor = 'black')
             plt.xlabel("Time [s]")
             plt.ylabel("Frequency")
@@ -139,7 +138,7 @@ class DataAquisition:
         frequency_count, bin_edges = np.histogram(df['FastestLap'], bins = bins)
 
         #Calc probability of each bin
-        pmf = frequency_count / frequency_count.sum() 
+        pmf = frequency_count / frequency_count.sum()
 
         #Plot PMF
         plt.stem(bin_edges[:-1], pmf)
@@ -162,8 +161,8 @@ class DataAquisition:
         frequency_count, bin_edges = np.histogram(df['FastestLap'], bins = bins)
 
         #Calc probability of each bin
-        pmf = frequency_count / frequency_count.sum() 
-        
+        pmf = frequency_count / frequency_count.sum()
+
         cumulative_pmf = []
         cumulative_value = 0
 
@@ -171,7 +170,7 @@ class DataAquisition:
         for i in range(len(pmf)):
             cumulative_value += pmf[i]
             cumulative_pmf.append(cumulative_value)
-        
+
         plt.stem(bin_edges[:-1], cumulative_pmf)
         plt.title(f"Cumulative Discrete PMF fastest laps {self.gp} GP {self.year} FP1/FP2/FP3")
         plt.xlabel("Time [s]")
