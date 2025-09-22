@@ -4,7 +4,7 @@ This project is part of **MOD550: Fundaments of Machine Learning for and with En
 # About me
 
 
-#Tasks
+# Tasks
 ## Task 1
 * Make a histogram from a 2d random distribution.
 * Make a 2d heat map from a 2d random distribution.
@@ -13,7 +13,7 @@ This project is part of **MOD550: Fundaments of Machine Learning for and with En
 * Calculate the cumulative for each feature.
 
 ## Task 2
-* Make a DataModel class that reads the output of the DataAquisition class (from task1) in its __init__()
+* Make a DataModel class that reads the output of the DataAquisition class (from task1) in its \_\_init\_\_()
 * Make a function in DataModel to make a linear regression (using vanilla Python).
 * Make a function that split the data you got from DataAquisition into train, validation and test (using vanilla Python).
 * Make a function that computes MSE (from scrath).
