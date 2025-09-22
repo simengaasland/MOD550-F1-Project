@@ -2,7 +2,7 @@
 This project is part of **MOD550: Fundaments of Machine Learning for and with Engineering Applications** at the **University of Stavanger**. It uses machine learning techniques to predict the fastest lap times in a race based on practice session data. The goal is to explore how data from Free Practice sessions (FP1, FP2 and FP3) can be used to predict race performance.
 
 ## About me
-My name is Simen S. Gåsland and I am currently studying **Computational Engineering** at the University of Stavanger. I am also a certified **Automation Technician** and holds a **Bachelor's degree in Automation Engineering**. 
+My name is Simen S. Gåsland and I am currently studying **Computational Engineering** at the **University of Stavanger**. I am also a certified **Automation Technician** and holds a **Bachelor's degree in Automation Engineering**. 
 
 ## Tasks
 ### Task 1
