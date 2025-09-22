@@ -23,8 +23,8 @@ This project is part of **MOD550: Fundaments of Machine Learning for and with En
 * Make a linear regression on all your train data and test it on your validation.
 * Compute the MSE on your validation data.
 * Try for different distribution of initial data point
-** Discuss how different functions can be used in the linear regression, and different NN architecture. 
-** Discuss how you can use the validation data for the different cases. 
-** Discuss the different outcome from the different models when using the full dataset to train and when you use a different ML approach. 
-** Discuss the outcomes you get for K-means and GMM.
-** Discuss how you can integrate supervised and unsupervised methods for your case.
+    - Discuss how different functions can be used in the linear regression, and different NN architecture. 
+    - Discuss how you can use the validation data for the different cases. 
+    - Discuss the different outcome from the different models when using the full dataset to train and when you use a different ML approach.
+    - Discuss the outcomes you get for K-means and GMM.
+    - Discuss how you can integrate supervised and unsupervised methods for your case.
