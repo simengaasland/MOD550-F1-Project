@@ -82,19 +82,19 @@ class DataAquisition:
         #Empty dataframe with columns for driver and their fastest lap
         valid_driver_fastest_lap = pd.DataFrame(columns=['DriverNumber','Session','FastestLap'])
 
-        for session in range(len(list_of_fp_sessions)):
+        for fp_number, fp_session in enumerate(list_of_fp_sessions):
             #Collect all drivers that have completed a lap in FP
-            drivers = list_of_fp_sessions[session]['DriverNumber'].unique()
+            drivers = fp_session['DriverNumber'].unique()
 
-            for i in range(len(drivers)):
+            for _, driver in enumerate(drivers):
                 #Collect all laps completed by driver
-                driver_laps = list_of_fp_sessions[session][
-                    list_of_fp_sessions[session]['DriverNumber'] == drivers[i]
-                    ]
+                driver_laps = fp_session[fp_session['DriverNumber'] == driver]
 
-                #Remove deleted laps and NaN lap times
-                valid_driver_laps = driver_laps[
-                    driver_laps['Deleted'].astype(bool) == False].dropna(subset=['LapTime'])
+                #Remove deleted laps
+                valid_driver_laps = driver_laps[driver_laps['Deleted'].astype(bool) == False]
+
+                #Remove NaN lap times
+                valid_driver_laps = valid_driver_laps.dropna(subset=['LapTime'])
 
                 #Temp list to store laps in total seconds
                 driver_lap_times_sec = []
@@ -110,8 +110,8 @@ class DataAquisition:
 
                 #Add drivers fastest lap to dataframe
                 valid_driver_fastest_lap.loc[
-                    len(valid_driver_fastest_lap)] = [drivers[i],
-                                                      f'FP{session + 1}' ,
+                    len(valid_driver_fastest_lap)] = [driver,
+                                                      f'FP{fp_number + 1}' ,
                                                       driver_lap_times_sec[0]
                                                       ]
 
