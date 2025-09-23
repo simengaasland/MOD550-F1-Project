@@ -105,8 +105,9 @@ class DataAquisition:
                         driver_lap_times_sec.append(
                             valid_driver_laps.iloc[j]['LapTime'].total_seconds()
                             )
+                #If driver has not completed a lap in FP laptime is set to NaN
                 else:
-                    driver_lap_times_sec.append(0)
+                    driver_lap_times_sec.append(np.nan)
 
                 #Sort drivers lap times. Fastest lap is at [0]
                 driver_lap_times_sec.sort()
