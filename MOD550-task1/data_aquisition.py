@@ -80,7 +80,7 @@ class DataAquisition:
         list_of_fp_sessions = self.get_practice_laps()
 
         #Empty dataframe with columns for driver and their fastest lap
-        valid_driver_fastest_lap = pd.DataFrame(columns=['DriverNumber','Session','FastestLap'])
+        valid_driver_fastest_lap = pd.DataFrame(columns=['DriverNumber','Session','FastestLap', 'GP'])
 
         for fp_number, fp_session in enumerate(list_of_fp_sessions):
             #Collect all drivers that have completed a lap in FP
@@ -115,7 +115,8 @@ class DataAquisition:
                 valid_driver_fastest_lap.loc[
                     len(valid_driver_fastest_lap)] = [driver,
                                                       f'FP{fp_number + 1}' ,
-                                                      driver_lap_times_sec[0]
+                                                      driver_lap_times_sec[0],
+                                                      self.gp
                                                       ]
 
         #Sort dataframe before returning
@@ -124,6 +125,49 @@ class DataAquisition:
             ).reset_index(drop = True)
 
         return valid_driver_fastest_lap
+
+    def get_fastest_race_lap(self):
+        '''
+        Add doc string here
+        '''
+        race_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'Race')
+
+        race_session.load()
+
+        df_race_fastest_lap = race_session.laps.pick_fastest()
+
+        race_fastest_lap = df_race_fastest_lap['LapTime'].total_seconds()
+
+        return race_fastest_lap
+
+    def get_data():
+        year = 2024
+        #Collecting schedule for entire season, excluding testing sessions
+        event_schedule = f1.get_event_schedule(year, include_testing = False)
+
+        #Removing sprint weekends as they do not have FP2 and FP3
+        conventinal_event_schedule = event_schedule[
+            event_schedule['EventFormat'] == 'conventional'
+            ]
+
+        #Getting a list of all gps (['Sakhir', 'Jeddah' ...])
+        gps = conventinal_event_schedule['Location'].tolist()
+
+        #Empty list to collect all the DataFrames
+        list_of_data = []
+
+        for _, gp in enumerate(gps):
+            temp_list_of_data = DataAquisition(gp, year).get_fastest_laps()
+            fastest_race_lap = DataAquisition(gp, year).get_fastest_race_lap()
+
+            for _, fp_session in enumerate(temp_list_of_data):
+                fp_session['FastestRaceLap'] = fastest_race_lap
+
+            list_of_data.append()
+
+
+        #Adding fastest lap of the race the data
+
 
     def plot_histogram(self, bins = 12):
         '''
