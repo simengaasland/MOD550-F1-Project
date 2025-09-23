@@ -12,6 +12,9 @@ class DataModel:
     Fitting docstring for this class
     '''
     def __init__(self):
+        print('Init')
+
+    def testing(self):
         year = 2024
         #Collecting schedule for entire season, excluding testing sessions
         event_schedule = f1.get_event_schedule(year, include_testing = False)
@@ -28,7 +31,13 @@ class DataModel:
         list_of_data = []
 
         for _, gp in enumerate(gps):
-            list_of_data.append(DataAquisition(gp, year).get_fastest_laps())
+            da = DataAquisition(gp, year)
+            df_fp_data = da.get_fastest_laps()
+            df_fp_data['FastestLapRace'] = da.get_fastest_race_lap()
+            list_of_data.append(df_fp_data)
+
+        return list_of_data
 
 
 cake = DataModel()
+print(cake.testing())

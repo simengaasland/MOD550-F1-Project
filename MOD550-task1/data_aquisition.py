@@ -128,46 +128,19 @@ class DataAquisition:
 
     def get_fastest_race_lap(self):
         '''
-        Add doc string here
+        Function that returns the fastest lap of the race
         '''
+        #Collecting and loading Race session
         race_session = f1.get_session(year = self.year, gp = self.gp, identifier = 'Race')
-
         race_session.load()
 
+        #Find the fastest lap of the race
         df_race_fastest_lap = race_session.laps.pick_fastest()
 
+        #Convert laptime from DateTime to float (seconds)
         race_fastest_lap = df_race_fastest_lap['LapTime'].total_seconds()
 
         return race_fastest_lap
-
-    def get_data():
-        year = 2024
-        #Collecting schedule for entire season, excluding testing sessions
-        event_schedule = f1.get_event_schedule(year, include_testing = False)
-
-        #Removing sprint weekends as they do not have FP2 and FP3
-        conventinal_event_schedule = event_schedule[
-            event_schedule['EventFormat'] == 'conventional'
-            ]
-
-        #Getting a list of all gps (['Sakhir', 'Jeddah' ...])
-        gps = conventinal_event_schedule['Location'].tolist()
-
-        #Empty list to collect all the DataFrames
-        list_of_data = []
-
-        for _, gp in enumerate(gps):
-            temp_list_of_data = DataAquisition(gp, year).get_fastest_laps()
-            fastest_race_lap = DataAquisition(gp, year).get_fastest_race_lap()
-
-            for _, fp_session in enumerate(temp_list_of_data):
-                fp_session['FastestRaceLap'] = fastest_race_lap
-
-            list_of_data.append()
-
-
-        #Adding fastest lap of the race the data
-
 
     def plot_histogram(self, bins = 12):
         '''
