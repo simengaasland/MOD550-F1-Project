@@ -3,47 +3,66 @@ This module contains the DataModel class
 '''
 import sys
 import pandas as pd
-import fastf1 as f1
+import numpy as np
+from matplotlib import pyplot as plt
+from sklearn.linear_model import LinearRegression
 
 sys.path.append('C:/Users/simen/Documents/GitHub/MOD550-F1-Project/MOD550-task1')
-from data_aquisition import DataAquisition
+from DataGenerator import DataGenerator
 
 class DataModel:
     '''
     Fitting docstring for this class
     '''
-    def __init__(self):
-        year = 2024
-        #Collecting schedule for entire season, excluding testing sessions
-        event_schedule = f1.get_event_schedule(year, include_testing = False)
-
-        #Removing sprint weekends as they do not have FP2 and FP3
-        conventinal_event_schedule = event_schedule[
-            event_schedule['EventFormat'] == 'conventional'
-            ]
-
-        #Getting a list of all gps (['Sakhir', 'Jeddah' ...])
-        gps = conventinal_event_schedule['Location'].tolist()
-
-        #Empty list to collect all the DataFrames
-        list_of_data = []
-
-        for _, gp in enumerate(gps):
-            da = DataAquisition(gp, year)
-            df_fp_data = da.get_fastest_laps()
-            df_fp_data['FastestLapRace'] = da.get_fastest_race_lap()
-            list_of_data.append(df_fp_data)
-
-        #Combining list of DataFrames into one DataFrame
-        self.data = pd.concat(list_of_data, ignore_index=True)
-
-        #Removes NaN values for set for drivers who has not completed a FP lap
-        self.data = self.data.dropna(subset=['FastestLap'])
-        self.data.to_csv('F1_data.csv', index=False)
-
-    def show_data(self):
-        print(self.data)
+    def __init__(self,n_points):
+        self.N = n_points
+        self.dg = DataGenerator(self.N)
+        self.data = self.dg.random_2d_point_gen()
 
 
-cake = DataModel()
-print(cake.show_data())
+    def simple_linear_regression(self):
+
+        #Splits up data into x- and y-values
+        data_x_values, data_y_values = self.dg.get_xy_values(self.data)
+
+        #Calculates mean of x- and y-values
+        sum_x = 0
+        sum_y = 0
+        mean_x = 0
+        mean_y = 0
+
+        for _, x_val in enumerate(data_x_values):
+            sum_x += x_val
+        mean_x = sum_x / self.N
+
+        for _, y_val in enumerate(data_y_values):
+            sum_y += y_val
+        mean_y = sum_y / self.N
+
+        #Calculate slope of regression line
+        nominator_sum = 0
+        denominator_sum = 0
+
+        for i in range(self.N):
+            nominator_sum += (data_x_values[i] - mean_x) * (data_y_values[i] - mean_y)
+            denominator_sum += (data_x_values[i] - mean_x)**2
+
+        m = nominator_sum / denominator_sum
+
+        #Calculate intercept y = m*x + c
+        c = mean_y - (m * mean_x)
+
+        #Calculate y = m*x + c
+        y_pred = []
+        for _, x in enumerate(data_x_values):
+            y_pred.append(m*x + c)
+
+        #Plot
+        plt.scatter(data_x_values, data_y_values, color = 'blue')
+        plt.plot(data_x_values, y_pred, color = 'red')
+        plt.title(f'$ \hat y = {round(m,2)} \cdot x + {round(c,2)}$')
+        plt.show()
+
+
+class1 = DataModel(n_points = 100)
+class1.simple_linear_regression()
