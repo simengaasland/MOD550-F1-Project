@@ -6,7 +6,9 @@ import pandas as pd
 import numpy as np
 import random
 from matplotlib import pyplot as plt
-from sklearn.linear_model import LinearRegression
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.regularizers import l2
 
 sys.path.append('C:/Users/simen/Documents/GitHub/MOD550-F1-Project/MOD550-task1')
 from DataGenerator import DataGenerator
@@ -23,8 +25,10 @@ class DataModel:
 
     def simple_linear_regression(self):
 
+        train_data, self.valid_data, _ = self.split_train_validation_test()
+
         #Splits up data into x- and y-values
-        data_x_values, data_y_values = self.dg.get_xy_values(self.data)
+        train_x_values, train_y_values = self.dg.get_xy_values(train_data)
 
         #Calculates mean of x- and y-values
         sum_x = 0
@@ -32,11 +36,11 @@ class DataModel:
         mean_x = 0
         mean_y = 0
 
-        for _, x_val in enumerate(data_x_values):
+        for _, x_val in enumerate(train_x_values):
             sum_x += x_val
         mean_x = sum_x / self.N
 
-        for _, y_val in enumerate(data_y_values):
+        for _, y_val in enumerate(train_y_values):
             sum_y += y_val
         mean_y = sum_y / self.N
 
@@ -44,24 +48,24 @@ class DataModel:
         nominator_sum = 0
         denominator_sum = 0
 
-        for i in range(self.N):
-            nominator_sum += (data_x_values[i] - mean_x) * (data_y_values[i] - mean_y)
-            denominator_sum += (data_x_values[i] - mean_x)**2
+        for i in range(len(train_data)):
+            nominator_sum += (train_x_values[i] - mean_x) * (train_y_values[i] - mean_y)
+            denominator_sum += (train_x_values[i] - mean_x)**2
 
-        m = nominator_sum / denominator_sum
+        self.m = nominator_sum / denominator_sum
 
         #Calculate intercept y = m*x + c
-        c = mean_y - (m * mean_x)
+        self.c = mean_y - (self.m * mean_x)
 
         #Calculate y = m*x + c
-        y_pred = []
-        for _, x in enumerate(data_x_values):
-            y_pred.append(m*x + c)
+        self.y_pred = []
+        for _, x in enumerate(train_x_values):
+            self.y_pred.append(self.m*x + self.c)
 
         #Plot
-        plt.scatter(data_x_values, data_y_values, color = 'blue')
-        plt.plot(data_x_values, y_pred, color = 'red')
-        plt.title(f'$ \hat y = {round(m,2)} \cdot x + {round(c,2)}$')
+        plt.scatter(train_x_values, train_y_values, color = 'blue')
+        plt.plot(train_x_values, self.y_pred, color = 'red')
+        plt.title(f'$ \hat y = {round(self.m,2)} \cdot x + {round(self.c,2)}$')
         plt.show()
 
     def  split_train_validation_test(self):
@@ -94,9 +98,66 @@ class DataModel:
 
         return train_data, valid_data, test_data
 
+    def calc_MSE(self):
+        '''
+        This function uses validation data to calulate Mean squared Error.
+        If a linear regression has not been preformed the fuction will
+        return mse = None.
+        '''
+        try:
+            #Get x- and y-values
+            valid_x_values, valid_y_values = self.dg.get_xy_values(self.valid_data)
+
+            #Initialize
+            mse = 0
+            error_squared = 0
+
+            #Calculate error squared
+            for i, y_real in enumerate(valid_y_values):
+                y_pred = self.m * valid_x_values[i] + self.c
+                error_squared += (y_real - y_pred)**2
+
+            #Calculate Mean Errro Squared and return
+            mse = (1/self.N) * error_squared
+            return round(mse,2)
+
+        except:
+            print('A linear regression has to be preformed before using calc_MSE function')
+            mse = None
+
+    def neural_network(self):
+        '''
+        '''
+        #Gets training data
+        train_data, _, _ = self.split_train_validation_test()
+
+        #Splits up data into x- and y-values
+        x_values_list, y_values_list = self.dg.get_xy_values(train_data)
+
+        x_values = np.array(x_values_list)
+        y_values = np.array(y_values_list)
+
+        model = Sequential([Dense(8, input_dim = 1, activation = 'relu', kernel_regularizer =l2(0.01)),
+                            Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
+                            Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
+                            Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
+                        Dense(1)])
+
+        model.compile(optimizer = 'adam', loss = 'mean_squared_error')
+
+        model.fit(x_values,y_values, epochs = 50, verbose = 1)
+
+        y_pred = model.predict(x_values)
+
+        plt.scatter(x_values, y_values, color = 'blue')
+        plt.scatter(x_values ,y_pred, color = 'red')
+        plt.show()
 
 
 
 class1 = DataModel(n_points = 100)
-#class1.simple_linear_regression()
+class1.simple_linear_regression()
 #train_data, valid_data, test_data = class1.split_train_validation_test()
+print(class1.calc_MSE())
+class1.neural_network()
+
