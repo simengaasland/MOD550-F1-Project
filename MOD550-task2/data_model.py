@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.regularizers import l2
-from sklearn.metrics import accuracy_score
+from sklearn.cluster import KMeans
 
 sys.path.append('C:/Users/simen/Documents/GitHub/MOD550-F1-Project/MOD550-task1')
 from DataGenerator import DataGenerator
@@ -107,15 +107,15 @@ class DataModel:
         '''
         try:
             #Get x- and y-values
-            valid_x_values, valid_y_values = self.dg.get_xy_values(self.valid_data)
+            X_valid, y_valid = self.dg.get_xy_values(self.valid_data)
 
             #Initialize
             mse = 0
             error_squared = 0
 
             #Calculate error squared
-            for i, y_real in enumerate(valid_y_values):
-                y_pred = self.m * valid_x_values[i] + self.c
+            for i, y_real in enumerate(y_valid):
+                y_pred = self.m * X_valid[i] + self.c
                 error_squared += (y_real - y_pred)**2
 
             #Calculate Mean Errro Squared and return
@@ -158,14 +158,36 @@ class DataModel:
         plt.legend()
         plt.show()
 
-    def K_mean(self):
+    def K_mean(self, n_clusters):
+        x, y = self.dg.get_xy_values(self.data)
 
+        inertias = []
 
+        for i in range(1,11):
+            kmeans = KMeans(n_clusters=i)
+            kmeans.fit(self.data)
+            inertias.append(kmeans.inertia_)
+
+        plt.plot(range(1,11), inertias, marker='x')
+        plt.title('Elbow method')
+        plt.xlabel('Number of clusters')
+        plt.ylabel('Within SS')
+        plt.show()
+
+        model = KMeans(n_clusters = n_clusters)
+        model.fit(self.data)
+
+        plt.scatter(x, y, c = model.labels_)
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(f'K means with {n_clusters} clusters')
+        plt.show()
 
 
 class1 = DataModel(n_points = 100)
 #class1.simple_linear_regression()
 #train_data, valid_data, test_data = class1.split_train_validation_test()
 #print(class1.calc_MSE())
-class1.neural_network()
+#class1.neural_network()
+class1.K_mean(n_clusters = 2)
 
