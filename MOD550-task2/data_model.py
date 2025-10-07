@@ -11,6 +11,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.regularizers import l2
 from sklearn.cluster import KMeans
 
+
 sys.path.append('C:/Users/simen/Documents/GitHub/MOD550-F1-Project/MOD550-task1')
 from DataGenerator import DataGenerator
 
@@ -159,6 +160,9 @@ class DataModel:
         plt.show()
 
     def K_mean(self, n_clusters, elbow_plot = True):
+        '''
+        Doc string
+        '''
         x, y = self.dg.get_xy_values(self.data)
 
         if elbow_plot == True:
@@ -184,11 +188,13 @@ class DataModel:
         plt.title(f'K means with {n_clusters} clusters')
         plt.show()
 
+    #def GMM(self):
+
 
 class1 = DataModel(n_points = 100)
 #class1.simple_linear_regression()
 #train_data, valid_data, test_data = class1.split_train_validation_test()
 #print(class1.calc_MSE())
 #class1.neural_network()
-class1.K_mean(n_clusters = 2)
+#class1.K_mean(n_clusters = 3, elbow_plot = False)
 
