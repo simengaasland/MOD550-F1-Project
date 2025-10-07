@@ -10,6 +10,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.regularizers import l2
 from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
 
 
 sys.path.append('C:/Users/simen/Documents/GitHub/MOD550-F1-Project/MOD550-task1')
@@ -188,7 +189,21 @@ class DataModel:
         plt.title(f'K means with {n_clusters} clusters')
         plt.show()
 
-    #def GMM(self):
+    def GMM(self, n_clusters):
+        '''
+        Doc string
+        '''
+        x, y = self.dg.get_xy_values(self.data)
+
+        model = GaussianMixture(n_components = n_clusters)
+        model.fit(self.data)
+        labels = model.predict(self.data)
+
+        plt.scatter(x, y, c = labels)
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title(f'Gaussian Mixture Model (GMM) with {n_clusters} clusters')
+        plt.show()
 
 
 class1 = DataModel(n_points = 100)
@@ -197,4 +212,5 @@ class1 = DataModel(n_points = 100)
 #print(class1.calc_MSE())
 #class1.neural_network()
 #class1.K_mean(n_clusters = 3, elbow_plot = False)
+class1.GMM(n_clusters = 3)
 
