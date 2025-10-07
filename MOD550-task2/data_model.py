@@ -73,7 +73,7 @@ class DataModel:
         #Plot
         plt.scatter(x_train, y_train, color = 'blue', label = 'Training data')
         plt.plot(x_train, self.y_pred, color = 'red', label = 'Prediction')
-        plt.title(r'$\hat y = {self.m : .2f} \cdot x + {self.c : .2f}$')
+        plt.title(f'$\hat y = {self.m : .2f} \cdot x + {self.c : .2f}$')
         plt.show()
 
     def  split_train_validation_test(self):
@@ -130,7 +130,8 @@ class DataModel:
             return round(mse,2)
 
         except Exception as e:
-            print('A linear regression has to be preformed before using calc_MSE function')
+            print('A linear regression has to be preformed (statistic = False) ' \
+            'before using calc_mse function')
             print(f'Error: {e}')
             mse = None
 
