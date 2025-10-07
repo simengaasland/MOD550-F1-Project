@@ -26,9 +26,12 @@ class DataModel:
         self.data = self.dg.random_2d_point_gen()
 
 
-    def simple_linear_regression(self):
+    def simple_linear_regression(self, statistic = False):
 
-        train_data, self.valid_data, _ = self.split_train_validation_test()
+        if statistic == True:
+            train_data = self.data
+        else:
+            train_data, self.valid_data, _ = self.split_train_validation_test()
 
         #Splits up data into x- and y-values
         X_train, y_train = self.dg.get_xy_values(train_data)
