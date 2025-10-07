@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.regularizers import l2
+from sklearn.metrics import accuracy_score
 
 sys.path.append('C:/Users/simen/Documents/GitHub/MOD550-F1-Project/MOD550-task1')
 from DataGenerator import DataGenerator
@@ -28,7 +29,7 @@ class DataModel:
         train_data, self.valid_data, _ = self.split_train_validation_test()
 
         #Splits up data into x- and y-values
-        train_x_values, train_y_values = self.dg.get_xy_values(train_data)
+        X_train, y_train = self.dg.get_xy_values(train_data)
 
         #Calculates mean of x- and y-values
         sum_x = 0
@@ -36,11 +37,11 @@ class DataModel:
         mean_x = 0
         mean_y = 0
 
-        for _, x_val in enumerate(train_x_values):
+        for _, x_val in enumerate(X_train):
             sum_x += x_val
         mean_x = sum_x / self.N
 
-        for _, y_val in enumerate(train_y_values):
+        for _, y_val in enumerate(y_train):
             sum_y += y_val
         mean_y = sum_y / self.N
 
@@ -49,8 +50,8 @@ class DataModel:
         denominator_sum = 0
 
         for i in range(len(train_data)):
-            nominator_sum += (train_x_values[i] - mean_x) * (train_y_values[i] - mean_y)
-            denominator_sum += (train_x_values[i] - mean_x)**2
+            nominator_sum += (X_train[i] - mean_x) * (y_train[i] - mean_y)
+            denominator_sum += (X_train[i] - mean_x)**2
 
         self.m = nominator_sum / denominator_sum
 
@@ -59,12 +60,12 @@ class DataModel:
 
         #Calculate y = m*x + c
         self.y_pred = []
-        for _, x in enumerate(train_x_values):
+        for _, x in enumerate(X_train):
             self.y_pred.append(self.m*x + self.c)
 
         #Plot
-        plt.scatter(train_x_values, train_y_values, color = 'blue')
-        plt.plot(train_x_values, self.y_pred, color = 'red')
+        plt.scatter(X_train, y_train, color = 'blue', label = 'Training data')
+        plt.plot(X_train, self.y_pred, color = 'red', label = 'Prediction')
         plt.title(f'$ \hat y = {round(self.m,2)} \cdot x + {round(self.c,2)}$')
         plt.show()
 
@@ -127,37 +128,44 @@ class DataModel:
 
     def neural_network(self):
         '''
+        Doc string
         '''
         #Gets training data
-        train_data, _, _ = self.split_train_validation_test()
+        train_data, _ , test_data = self.split_train_validation_test()
 
         #Splits up data into x- and y-values
-        x_values_list, y_values_list = self.dg.get_xy_values(train_data)
+        X_train, y_train = self.dg.get_xy_values(train_data)
+        X_test, y_test = self.dg.get_xy_values(test_data)
 
-        x_values = np.array(x_values_list)
-        y_values = np.array(y_values_list)
+        X_train = np.array(X_train)
+        y_train = np.array(y_train)
+        X_test = np.array(X_test)
+        y_test = np.array(y_test)
 
-        model = Sequential([Dense(8, input_dim = 1, activation = 'relu', kernel_regularizer =l2(0.01)),
+        model = Sequential([Dense(32, input_dim = 1, activation = 'relu', kernel_regularizer =l2(0.01)),
                             Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
                             Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
-                            Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
-                        Dense(1)])
+                            Dense(1)])
 
-        model.compile(optimizer = 'adam', loss = 'mean_squared_error')
+        model.compile(optimizer = 'Adam', loss = 'mean_squared_error')
 
-        model.fit(x_values,y_values, epochs = 50, verbose = 1)
+        model.fit(X_train,y_train, epochs = 70, verbose = 1)
 
-        y_pred = model.predict(x_values)
-
-        plt.scatter(x_values, y_values, color = 'blue')
-        plt.scatter(x_values ,y_pred, color = 'red')
+        y_pred = model.predict(X_test)
+        print(X_train.shape)
+        plt.scatter(X_train, y_train, color = 'blue', label = 'Training data')
+        plt.plot(X_test, y_pred, color = 'red', label = 'NN prediction')
+        plt.legend()
         plt.show()
+
+    def K_mean(self):
+
 
 
 
 class1 = DataModel(n_points = 100)
-class1.simple_linear_regression()
+#class1.simple_linear_regression()
 #train_data, valid_data, test_data = class1.split_train_validation_test()
-print(class1.calc_MSE())
+#print(class1.calc_MSE())
 class1.neural_network()
 
