@@ -158,21 +158,22 @@ class DataModel:
         plt.legend()
         plt.show()
 
-    def K_mean(self, n_clusters):
+    def K_mean(self, n_clusters, elbow_plot = True):
         x, y = self.dg.get_xy_values(self.data)
 
-        inertias = []
+        if elbow_plot == True:
+            inertias = []
 
-        for i in range(1,11):
-            kmeans = KMeans(n_clusters=i)
-            kmeans.fit(self.data)
-            inertias.append(kmeans.inertia_)
+            for i in range(1,11):
+                kmeans = KMeans(n_clusters=i)
+                kmeans.fit(self.data)
+                inertias.append(kmeans.inertia_)
 
-        plt.plot(range(1,11), inertias, marker='x')
-        plt.title('Elbow method')
-        plt.xlabel('Number of clusters')
-        plt.ylabel('Within SS')
-        plt.show()
+            plt.plot(range(1,11), inertias, marker='x')
+            plt.title('Elbow method')
+            plt.xlabel('Number of clusters')
+            plt.ylabel('Within SS')
+            plt.show()
 
         model = KMeans(n_clusters = n_clusters)
         model.fit(self.data)
