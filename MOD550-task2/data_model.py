@@ -73,7 +73,7 @@ class DataModel:
         #Plot
         plt.scatter(x_train, y_train, color = 'blue', label = 'Training data')
         plt.plot(x_train, self.y_pred, color = 'red', label = 'Prediction')
-        plt.title(r'$\hat y = {round(self.m,2)} \cdot x + {round(self.c,2)}$')
+        plt.title(r'$\hat y = {self.m : .2f} \cdot x + {self.c : .2f}$')
         plt.show()
 
     def  split_train_validation_test(self):
