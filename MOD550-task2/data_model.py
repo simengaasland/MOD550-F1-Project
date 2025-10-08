@@ -13,22 +13,22 @@ from tensorflow.keras.regularizers import l2
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 
-
+#--------------------------------------Task 2.1--------------------------------------
 sys.path.append('C:/Users/simen/Documents/GitHub/MOD550-F1-Project/MOD550-task1')
 from data_generator import DataGenerator
 
 class DataModel:
-    '''
-    Fitting docstring for this class
-    '''
+
     def __init__(self,n_points):
         self.n = n_points
         self.dg = DataGenerator(self.n)
         self.data = self.dg.random_2d_point_gen()
 
+#--------------------------------------Task 2.2--------------------------------------
     def simple_linear_regression(self, statistic = False):
         '''
-        Doc string
+        This function preforms a simple linear regression
+        and plots the result.
         '''
         if statistic is True:
             train_data = self.data
@@ -76,6 +76,7 @@ class DataModel:
         plt.title(f'$\hat y = {self.m : .2f} \cdot x + {self.c : .2f}$')
         plt.show()
 
+#--------------------------------------Task 2.3--------------------------------------
     def  split_train_validation_test(self):
         '''
         This function randomly shuffles the data
@@ -106,6 +107,7 @@ class DataModel:
 
         return train_data, valid_data, test_data
 
+#--------------------------------------Task 2.4--------------------------------------
     def calc_mse(self):
         '''
         This function uses validation data to calulate Mean squared Error.
@@ -127,7 +129,7 @@ class DataModel:
 
             #Calculate Mean Errro Squared and return
             mse = (1/self.n) * error_squared
-            return round(mse,2)
+            return mse
 
         except Exception as e:
             print('A linear regression has to be preformed (statistic = False) ' \
@@ -135,9 +137,12 @@ class DataModel:
             print(f'Error: {e}')
             mse = None
 
+#--------------------------------------Task 2.5--------------------------------------
     def neural_network(self):
         '''
-        Doc string
+        This functions sets up a Neural Network (NN) with
+        3 hidden layers and 1 output layer. The result
+        is then plotted.
         '''
         #Gets training data
         train_data, _ , test_data = self.split_train_validation_test()
@@ -146,31 +151,39 @@ class DataModel:
         x_train, y_train = self.dg.get_xy_values(train_data)
         x_test, y_test = self.dg.get_xy_values(test_data)
 
+        #Convert to arrays
         x_train = np.array(x_train)
         y_train = np.array(y_train)
         x_test = np.array(x_test)
         y_test = np.array(y_test)
 
+        #Build NN with 3 hidden layers and 1 output layer
         model = Sequential([
             Dense(32, input_dim = 1, activation = 'relu', kernel_regularizer =l2(0.01)),
             Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
             Dense(64, activation = 'relu', kernel_regularizer = l2(0.01)),
             Dense(1)])
 
+        #Fitting model
         model.compile(optimizer = 'Adam', loss = 'mean_squared_error')
+        model.fit(x_train,y_train, epochs = 70, verbose = 0)
 
-        model.fit(x_train,y_train, epochs = 70, verbose = 1)
-
+        #Make prediction
         y_pred = model.predict(x_test)
-        print(x_train.shape)
+
+        #Plot
         plt.scatter(x_train, y_train, color = 'blue', label = 'Training data')
         plt.plot(x_test, y_pred, color = 'red', label = 'NN prediction')
         plt.legend()
         plt.show()
 
+#--------------------------------------Task 2.6--------------------------------------
     def k_mean(self, n_clusters, elbow_plot = True):
         '''
-        Doc string
+        This function uses k_means to divide unlabeled data
+        into clusters. The number of clusters is defined by
+        n_clusters. The elbow plot can be used to choose
+        number of clusters.
         '''
         x, y = self.dg.get_xy_values(self.data)
 
@@ -199,7 +212,9 @@ class DataModel:
 
     def gmm(self, n_clusters):
         '''
-        Doc string
+        This function uses a Gaussian Mixture Model (GMM)
+        to devide unlabeled data into clusters. The amount
+        of clusters if defined by n_clusters.
         '''
         x, y = self.dg.get_xy_values(self.data)
 
