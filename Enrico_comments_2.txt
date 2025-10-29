@@ -1,0 +1,31 @@
+
+Readme.md: Very good.
+
+Task 1: Good!
+Task 2: Good!
+Task 3: Good!
+Task 4: Good!
+Task 5: Good!
+Task 6: Good!
+Task 7: Good!
+Task 8: Good!
+Task 9: Good!
+
+Task 10a: a linear regression is not just lines! It can use other functions (exp or so). The term linear means a linear combination of terms. Check the notes again. 
+For the loss function, push youself a bit more. When you see that gradient descent doesn't work, that it is the start of your search (not the end). Adam might work for the wrong reason! 
+
+10b : missing the first question makes the second answer out of context. I will probably ask something about this poin in the exam ;)
+10c : good
+10d : good
+10e : good
+
+Comment:
+
+python : use pylint for detailed suggstions, overall it is good. I still would like to see more docstring (input and output description of each function). There are some issues in the code that you can smooth ut with pylint.
+    
+Jupyter notebook: Clean and to the point. Minor point, It would have been helpful to showcase/test the usage of your function in the notebook. 
+
+
+Note: good job. To prepare for the exam and next assignement, use your library with more complicated truth functions to generate data. Also you might want to generate data from multimodal distributions.
+I look forward to see your outcome on the final project.
+
