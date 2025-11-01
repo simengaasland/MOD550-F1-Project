@@ -166,15 +166,16 @@ class NameTBD:
             driver_lap_times_sec.sort()
             driver_fastest_lap = driver_lap_times_sec[0]
 
-            #Find average lap time of all FP sessions
-            driver_lap_mean = driver_laps_sum / driver_number_of_laps
-
-            #Calculate std
+            #Calculate mean and std of all FP sessions
             error_squared = 0
 
             if driver_number_of_laps == 0:
                 driver_lap_std = np.nan
+                driver_lap_mean = np.nan
+
             else:
+                driver_lap_mean = driver_laps_sum / driver_number_of_laps
+
                 for lap in (driver_lap_times_sec):
                     error_squared += (lap - driver_lap_mean)**2
                 driver_lap_std = np.sqrt(error_squared / driver_number_of_laps)
@@ -221,7 +222,7 @@ class NameTBD:
         data = pd.concat(list_of_data, ignore_index=True)
 
         #Removes NaN values for set for drivers who has not completed a FP lap
-        data = data.dropna(subset=['FastestLap'])
+        data = data.dropna(subset=['FastestFPLap'])
 
         #Adds fasten than teammate column
         data = self.faster_then_teammate(data)
@@ -234,13 +235,13 @@ class NameTBD:
         Adds 'FasterThenTeammate' column to dataframe
         '''
         data['FasterThanTeammate'] = (
-            (data['FastestLap'] == data.groupby(['Year','GP','Session','Team'])['FastestLap']
+            (data['FastestFPLap'] == data.groupby(['Year','GP', 'Team'])['FastestFPLap']
             .transform('min'))
             .astype(float)
             )
 
-         #Set NaN where only one teammate had a valid lap
-        only_one_driver = data.groupby(['Year','GP','Session','Team'])['DriverNumber'].transform('count') == 1
+        #Set NaN where only one teammate had a valid lap
+        only_one_driver = data.groupby(['Year','GP','Team'])['DriverNumber'].transform('count') == 1
         data.loc[only_one_driver, 'FasterThanTeammate'] = np.nan
 
         return data
