@@ -28,3 +28,21 @@ My name is Simen S. Gåsland and I am currently studying **Computational Enginee
     - Discuss the different outcome from the different models when using the full dataset to train and when you use a different ML approach.
     - Discuss the outcomes you get for K-means and GMM.
     - Discuss how you can integrate supervised and unsupervised methods for your case.
+
+### Task 3
+#### Part 1: Classification
+* Implement a Support Vector Classifier with linear or RBF kernels. Compare performance metrics (accuracy, precision, recall, confusion matrix). Discuss the role of the cost function and kernel choice.
+
+#### Part 2: Bayesian and Probabilistic Modeling
+* Compute posterior probabilities for a parameter in your dataset using the Beta–Binomial model (or another simple conjugate pair).
+* Implement Bayesian regression
+
+#### Part 3: Time Series Modeling
+Add a times series to your dataset and then:
+* Fit an ARIMA or GARCH/ARCH model and Forecast next values and plot confidence intervals.
+* Implement a simple RNN or LSTM model and compare results.
+
+#### Part 4: Spatial and Image Data
+Use your dataset which has spatial structure (e.g., 2D grid, coordinates, or images):
+* Compute and visualize the variogram of one variable and Perform Kriging.
+* Perform CNN-based prediction.
