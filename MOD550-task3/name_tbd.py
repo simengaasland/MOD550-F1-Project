@@ -46,7 +46,7 @@ class NameTBD:
         return fp_sessions
 
 
-    def get_fastest_race_lap(self, year, gp):
+    def get_fastest_race_lap_and_pos(self, year, gp):
         '''
         Function that returns the fastest lap of the race
 
@@ -63,29 +63,39 @@ class NameTBD:
         DataFrame???? Float
             A DataFrame with ...???
         '''
+        #Empty DataFrame
+        position_data = pd.DataFrame()
+
         #Collecting and loading Race session
         try:
             race_session = f1.get_session(year = year, gp = gp, identifier = 'Race')
             race_session.load()
         except:
             print(f'Could not load race session for {gp} {year}')
-            return np.nan
+            return np.nan, position_data
 
         try:
             #Find the fastest lap of the race
             df_race_fastest_lap = race_session.laps.pick_fastest()
+
+            #Finds result of race
+            df_race_results = race_session.results
         except:
-            return np.nan
+            return np.nan, position_data
 
         #Convert laptime from DateTime to float (seconds)
-        #Races like the Belgian GP in 2021 returns None,
+        #Races like the Belgian GP in 2021 returns NaN,
         #since every lap of the race was completed under
         #a safetycar, and therefore has no fastest lap.
         try:
             race_fastest_lap = df_race_fastest_lap['LapTime'].total_seconds()
-            return race_fastest_lap
+
+            position_data['FasterThanTeammateRace'] = (df_race_results['Position'] == df_race_results.groupby(['TeamName'])
+                                         ['Position'].transform('min')).astype(float)
+            return race_fastest_lap, position_data
         except:
-            return np.nan
+            return np.nan, position_data
+
 
     def get_fastest_laps(self, year, gp):
         '''
@@ -138,6 +148,7 @@ class NameTBD:
 
             #Find drivers team
             driver_team = driver_laps['Team'].unique()[0]
+
             #Remove deleted laps
             valid_driver_laps = driver_laps[driver_laps['Deleted'].astype(bool) == False]
 
@@ -147,17 +158,15 @@ class NameTBD:
             #Temp list to store laps in total seconds
             driver_lap_times_sec = []
 
-            #Used for calculating mean later
-            driver_laps_sum = 0
+            #Converting drivers laps to seconds
             driver_number_of_laps = len(valid_driver_laps)
 
-            #Converting drivers laps to seconds
             if driver_number_of_laps != 0:
                 for j in range(driver_number_of_laps):
                     driver_lap_times_sec.append(
                         valid_driver_laps.iloc[j]['LapTime'].total_seconds()
                         )
-                    driver_laps_sum += driver_lap_times_sec[j]
+
             #If driver has not completed a lap in FP laptime is set to NaN
             else:
                 driver_lap_times_sec.append(np.nan)
@@ -166,21 +175,34 @@ class NameTBD:
             driver_lap_times_sec.sort()
             driver_fastest_lap = driver_lap_times_sec[0]
 
+            #Including only push laps to reduce noice
+            driver_push_lap_times_sec = []
+
+            for lap_time in driver_lap_times_sec:
+                if abs(lap_time - driver_fastest_lap) < 2.0:
+                    driver_push_lap_times_sec.append(lap_time)
+
+            #Update number of valid laps
+            driver_number_of_push_laps = len(driver_push_lap_times_sec)
+
             #Calculate mean and std of all FP sessions
             error_squared = 0
+            driver_laps_sum = 0
 
-            if driver_number_of_laps == 0:
+            if driver_number_of_push_laps == 0:
                 driver_lap_std = np.nan
                 driver_lap_mean = np.nan
 
             else:
-                driver_lap_mean = driver_laps_sum / driver_number_of_laps
+                for lap in driver_push_lap_times_sec:
+                    driver_laps_sum += lap
+                driver_lap_mean = driver_laps_sum / driver_number_of_push_laps
 
-                for lap in (driver_lap_times_sec):
+                for lap in driver_push_lap_times_sec:
                     error_squared += (lap - driver_lap_mean)**2
-                driver_lap_std = np.sqrt(error_squared / driver_number_of_laps)
+                driver_lap_std = np.sqrt(error_squared / driver_number_of_push_laps)
 
-            #Add drivers fastest lap to dataframe
+            #Add to dataframe
             valid_driver_fastest_lap.loc[len(valid_driver_fastest_lap)] = [driver,
                                                                            driver_team,
                                                                            driver_fastest_lap,
@@ -188,14 +210,12 @@ class NameTBD:
                                                                            driver_lap_std,
                                                                            gp]
 
-        #Sort dataframe before returning
-        #valid_driver_fastest_lap = valid_driver_fastest_lap.sort_values(
-            #by = 'FastestLap'
-            #).reset_index(drop = True)
-
         return valid_driver_fastest_lap
 
     def get_data_from_api(self, years):
+
+        #Empty list to collect all the DataFrames
+        list_of_data = []
 
         #Collecting schedule for entire season, excluding testing sessions
         for year in years:
@@ -208,14 +228,13 @@ class NameTBD:
             #Getting a list of all gps (['Italian Grand Prix', ...])
             gps = event_schedule['EventName'].tolist()
 
-            #Empty list to collect all the DataFrames
-            list_of_data = []
-
             #Adding fastest FP and Race laps and year gp took place
             for gp in gps:
+                fastest_lap_of_race, faster_than_teammate_race = self.get_fastest_race_lap_and_pos(year, gp)
                 df_fp_data = self.get_fastest_laps(year, gp)
-                df_fp_data['FastestLapRace'] = self.get_fastest_race_lap(year, gp)
+                df_fp_data['FastestLapRace'] = fastest_lap_of_race
                 df_fp_data['Year'] = year
+                df_fp_data = df_fp_data.join(faster_than_teammate_race, on='DriverNumber')
                 list_of_data.append(df_fp_data)
 
         #Combining list of DataFrames into one DataFrame
@@ -225,16 +244,16 @@ class NameTBD:
         data = data.dropna(subset=['FastestFPLap'])
 
         #Adds fasten than teammate column
-        data = self.faster_then_teammate(data)
+        data = self.faster_then_teammate_FP(data)
 
         #Convert DataFrame to csv file
         data.to_csv('F1_data.csv', index=False)
 
-    def faster_then_teammate(self, data):
+    def faster_then_teammate_FP(self, data):
         '''
         Adds 'FasterThenTeammate' column to dataframe
         '''
-        data['FasterThanTeammate'] = (
+        data['FasterThanTeammateFP'] = (
             (data['FastestFPLap'] == data.groupby(['Year','GP', 'Team'])['FastestFPLap']
             .transform('min'))
             .astype(float)
@@ -242,13 +261,13 @@ class NameTBD:
 
         #Set NaN where only one teammate had a valid lap
         only_one_driver = data.groupby(['Year','GP','Team'])['DriverNumber'].transform('count') == 1
-        data.loc[only_one_driver, 'FasterThanTeammate'] = np.nan
+        data.loc[only_one_driver, 'FasterThanTeammateFP'] = np.nan
 
         return data
 
 if __name__ == '__main__':
-    years = [2024, 2023, 2022]
+    years = [2024, 2023, 2022, 2021, 2019, 2018, 2017, 2016]
     obj = NameTBD()
-    obj.get_data_from_api(years=years)
+    obj.get_data_from_api(years)
 
 
