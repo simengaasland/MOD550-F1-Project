@@ -28,6 +28,7 @@ class NameTBD:
             DataFrame containing FP1, FP2 & FP3.
         '''
         fp_sessions = []
+        fp_fastest_lap_sec = np.nan
 
         for fp in ['FP1', 'FP2', 'FP3']:
             #Try getting FP session from API
@@ -43,7 +44,13 @@ class NameTBD:
 
         #Combining list of DataFrames into one DataFrame
         fp_sessions = pd.concat(fp_sessions, ignore_index=True)
-        return fp_sessions
+
+        if not fp_sessions.empty:
+            fp_fastest_lap = fp_sessions['LapTime'].min()
+            fp_fastest_lap_sec = fp_fastest_lap.total_seconds()
+
+        return fp_sessions, fp_fastest_lap_sec
+
 
 
     def get_fastest_race_lap_and_pos(self, year, gp):
@@ -64,7 +71,7 @@ class NameTBD:
             A DataFrame with ...???
         '''
         #Empty DataFrame
-        position_data = pd.DataFrame()
+        position_race_data = pd.DataFrame()
 
         #Collecting and loading Race session
         try:
@@ -72,7 +79,7 @@ class NameTBD:
             race_session.load()
         except:
             print(f'Could not load race session for {gp} {year}')
-            return np.nan, position_data
+            return np.nan, position_race_data
 
         try:
             #Find the fastest lap of the race
@@ -81,7 +88,7 @@ class NameTBD:
             #Finds result of race
             df_race_results = race_session.results
         except:
-            return np.nan, position_data
+            return np.nan, position_race_data
 
         #Convert laptime from DateTime to float (seconds)
         #Races like the Belgian GP in 2021 returns NaN,
@@ -90,11 +97,13 @@ class NameTBD:
         try:
             race_fastest_lap = df_race_fastest_lap['LapTime'].total_seconds()
 
-            position_data['FasterThanTeammateRace'] = (df_race_results['Position'] == df_race_results.groupby(['TeamName'])
+            position_race_data['FasterThanTeammateRace'] = (df_race_results['Position'] == df_race_results.groupby(['TeamName'])
                                          ['Position'].transform('min')).astype(float)
-            return race_fastest_lap, position_data
+            position_race_data['PointFinishRace'] = (df_race_results['Position'] <= 10).astype(int)
+
+            return race_fastest_lap, position_race_data
         except:
-            return np.nan, position_data
+            return np.nan, position_race_data
 
 
     def get_fastest_laps(self, year, gp):
@@ -125,7 +134,7 @@ class NameTBD:
             A DataFrame with driver number, session and lap
             time in seconds
         '''
-        fp_sessions = self.get_practice_laps(year, gp)
+        fp_sessions, fp_fastest_lap_sec = self.get_practice_laps(year, gp)
 
         #Empty dataframe with columns for driver and their fastest lap
         valid_driver_fastest_lap = pd.DataFrame(columns=['DriverNumber',
@@ -133,6 +142,7 @@ class NameTBD:
                                                          'FastestFPLap',
                                                          'MeanFPLaps',
                                                          'StdFPLaps',
+                                                         'DeltaBestFPLap',
                                                          'GP'])
 
         #If there if no FP session
@@ -175,6 +185,9 @@ class NameTBD:
             driver_lap_times_sec.sort()
             driver_fastest_lap = driver_lap_times_sec[0]
 
+            #How far is driver from fastest lap
+            delta_best_lap = fp_fastest_lap_sec - driver_fastest_lap
+
             #Including only push laps to reduce noice
             driver_push_lap_times_sec = []
 
@@ -208,6 +221,7 @@ class NameTBD:
                                                                            driver_fastest_lap,
                                                                            driver_lap_mean,
                                                                            driver_lap_std,
+                                                                           delta_best_lap,
                                                                            gp]
 
         return valid_driver_fastest_lap
@@ -230,11 +244,11 @@ class NameTBD:
 
             #Adding fastest FP and Race laps and year gp took place
             for gp in gps:
-                fastest_lap_of_race, faster_than_teammate_race = self.get_fastest_race_lap_and_pos(year, gp)
+                fastest_lap_of_race, position_race_data = self.get_fastest_race_lap_and_pos(year, gp)
                 df_fp_data = self.get_fastest_laps(year, gp)
                 df_fp_data['FastestLapRace'] = fastest_lap_of_race
                 df_fp_data['Year'] = year
-                df_fp_data = df_fp_data.join(faster_than_teammate_race, on='DriverNumber')
+                df_fp_data = df_fp_data.join(position_race_data, on='DriverNumber')
                 list_of_data.append(df_fp_data)
 
         #Combining list of DataFrames into one DataFrame
@@ -266,8 +280,6 @@ class NameTBD:
         return data
 
 if __name__ == '__main__':
-    years = [2024, 2023, 2022, 2021, 2019, 2018, 2017, 2016]
+    years = [2024, 2023, 2022, 2021, 2019, 2025, 2020]
     obj = NameTBD()
     obj.get_data_from_api(years)
-
-
