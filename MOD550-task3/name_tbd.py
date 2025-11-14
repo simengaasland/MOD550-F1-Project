@@ -28,6 +28,7 @@ class NameTBD:
             DataFrame containing FP1, FP2 & FP3.
         '''
         fp_sessions = []
+        fp_weather = []
         fp_fastest_lap_sec = np.nan
 
         for fp in ['FP1', 'FP2', 'FP3']:
@@ -36,20 +37,23 @@ class NameTBD:
                 session = f1.get_session(year = year, gp = gp, identifier = fp)
                 session.load()
                 fp_sessions.append(session.laps)
+                fp_weather.append(session.weather_data)
 
             #Handling if the GP did not have FP session
             except:
                 print(f'No {fp} session found for {gp} {year}')
                 fp_sessions.append(pd.DataFrame())
+                fp_weather.append(pd.DataFrame())
 
         #Combining list of DataFrames into one DataFrame
         fp_sessions = pd.concat(fp_sessions, ignore_index=True)
+        fp_weather = pd.concat(fp_weather, ignore_index=True)
 
         if not fp_sessions.empty:
             fp_fastest_lap = fp_sessions['LapTime'].min()
             fp_fastest_lap_sec = fp_fastest_lap.total_seconds()
 
-        return fp_sessions, fp_fastest_lap_sec
+        return fp_sessions, fp_fastest_lap_sec, fp_weather
 
 
 
@@ -72,6 +76,11 @@ class NameTBD:
         '''
         #Empty DataFrame
         position_race_data = pd.DataFrame()
+        race_weather_data = {
+            'TrackTempAvgRace': np.nan,
+            'AirTempAvgRace': np.nan,
+            'RainAvgRace': np.nan
+        }
 
         #Collecting and loading Race session
         try:
@@ -79,7 +88,7 @@ class NameTBD:
             race_session.load()
         except:
             print(f'Could not load race session for {gp} {year}')
-            return np.nan, position_race_data
+            return np.nan, position_race_data, race_weather_data
 
         try:
             #Find the fastest lap of the race
@@ -87,8 +96,11 @@ class NameTBD:
 
             #Finds result of race
             df_race_results = race_session.results
+
+            #Get weather data
+            df_race_weather = race_session.weather_data
         except:
-            return np.nan, position_race_data
+            return np.nan, position_race_data, race_weather_data
 
         #Convert laptime from DateTime to float (seconds)
         #Races like the Belgian GP in 2021 returns NaN,
@@ -101,9 +113,13 @@ class NameTBD:
                                          ['Position'].transform('min')).astype(float)
             position_race_data['PointFinishRace'] = (df_race_results['Position'] <= 10).astype(int)
 
-            return race_fastest_lap, position_race_data
+            race_weather_data = {'TrackTempAvgRace': df_race_weather['TrackTemp'].mean(),
+                                 'AirTempAvgRace': df_race_weather['AirTemp'].mean(),
+                                 'RainAvgRace':  df_race_weather['Rainfall'].mean()}
+
+            return race_fastest_lap, position_race_data, race_weather_data
         except:
-            return np.nan, position_race_data
+            return np.nan, position_race_data, race_weather_data
 
 
     def get_fastest_laps(self, year, gp):
@@ -134,7 +150,7 @@ class NameTBD:
             A DataFrame with driver number, session and lap
             time in seconds
         '''
-        fp_sessions, fp_fastest_lap_sec = self.get_practice_laps(year, gp)
+        fp_sessions, fp_fastest_lap_sec, fp_weather = self.get_practice_laps(year, gp)
 
         #Empty dataframe with columns for driver and their fastest lap
         valid_driver_fastest_lap = pd.DataFrame(columns=['DriverNumber',
@@ -143,6 +159,9 @@ class NameTBD:
                                                          'MeanFPLaps',
                                                          'StdFPLaps',
                                                          'DeltaBestFPLap',
+                                                         'TrackTempAvgFP',
+                                                         'AirTempAvgFP',
+                                                         'RainAvgFP',
                                                          'GP'])
 
         #If there if no FP session
@@ -151,6 +170,11 @@ class NameTBD:
 
         #Collect all drivers that have completed a lap in FP
         drivers = fp_sessions['DriverNumber'].unique()
+
+        #Collect weather data
+        track_temp_avg = fp_weather['TrackTemp'].mean()
+        air_temp_avg = fp_weather['AirTemp'].mean()
+        rain_avg = fp_weather['Rainfall'].mean()
 
         for driver in drivers:
             #Collect all laps completed by driver
@@ -222,6 +246,9 @@ class NameTBD:
                                                                            driver_lap_mean,
                                                                            driver_lap_std,
                                                                            delta_best_lap,
+                                                                           track_temp_avg,
+                                                                           air_temp_avg,
+                                                                           rain_avg,
                                                                            gp]
 
         return valid_driver_fastest_lap
@@ -244,10 +271,13 @@ class NameTBD:
 
             #Adding fastest FP and Race laps and year gp took place
             for gp in gps:
-                fastest_lap_of_race, position_race_data = self.get_fastest_race_lap_and_pos(year, gp)
+                fastest_lap_of_race, position_race_data, weather_race_data = self.get_fastest_race_lap_and_pos(year, gp)
                 df_fp_data = self.get_fastest_laps(year, gp)
                 df_fp_data['FastestLapRace'] = fastest_lap_of_race
                 df_fp_data['Year'] = year
+                df_fp_data['TrackTempAvgRace'] = weather_race_data['TrackTempAvgRace']
+                df_fp_data['AirTempAvgRace'] = weather_race_data['AirTempAvgRace']
+                df_fp_data['RainAvgRace'] = weather_race_data['RainAvgRace']
                 df_fp_data = df_fp_data.join(position_race_data, on='DriverNumber')
                 list_of_data.append(df_fp_data)
 
@@ -261,7 +291,7 @@ class NameTBD:
         data = self.faster_then_teammate_FP(data)
 
         #Convert DataFrame to csv file
-        data.to_csv('F1_data.csv', index=False)
+        data.to_csv('F1_data_new_2025.csv', index=False)
 
     def faster_then_teammate_FP(self, data):
         '''
@@ -280,6 +310,7 @@ class NameTBD:
         return data
 
 if __name__ == '__main__':
-    years = [2024, 2023, 2022, 2021, 2019, 2025, 2020]
+    #years = [2024, 2023, 2022, 2021, 2019]
+    years = [2025]
     obj = NameTBD()
     obj.get_data_from_api(years)
