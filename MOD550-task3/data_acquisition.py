@@ -3,16 +3,22 @@ import os
 import numpy as np
 import pandas as pd
 
-class NameTBD:
+class DataAcquisition:
     def __init__(self):
         cache_dir = "./f1_cache"
         os.makedirs(cache_dir, exist_ok=True)
         f1.Cache.enable_cache("./f1_cache")
 
-    def get_practice_laps(self, year, gp):
+    def get_practice_features_and_weather(self, year, gp):
         '''
-        Collects FP1, FP2 and FP3 data from
-        the FastF1 API.
+        Collects FP1, FP2 and FP3 data for a given Grand Prix using the
+        FastF1 API.
+
+        This function loads FP1, FP2 and FP3 sessions. When a session is
+        missing (e.g. sprint weekends), it inserts an empty DataFrame.
+        It also returns the fastest lap for all sessions in seconds.
+        Lastly, it returns a DataFrame with the weather data for all
+        sessions.
 
         Input
         ------
@@ -24,30 +30,38 @@ class NameTBD:
 
         Output
         ------
-        DataFrames
-            DataFrame containing FP1, FP2 & FP3.
+        tuple:
+            fp_sessions (DataFrame):
+                Combined Dataframe of all FP1, FP2 and FP3 laps.
+            fp_fastest_lap_sec (float):
+                Fastest lap of all FP sessions in seconds.
+            fp_weather (DataFrame):
+                Combinded weather data for all FP sessions.
         '''
-        fp_sessions = []
-        fp_weather = []
+        fp_sessions_list = []
+        fp_weather_list = []
         fp_fastest_lap_sec = np.nan
 
-        for fp in ['FP1', 'FP2', 'FP3']:
+        fp_sessions = ['FP1', 'FP2', 'FP3']
+
+        for fp in fp_sessions:
             #Try getting FP session from API
             try:
                 session = f1.get_session(year = year, gp = gp, identifier = fp)
                 session.load()
-                fp_sessions.append(session.laps)
-                fp_weather.append(session.weather_data)
+
+                fp_sessions_list.append(session.laps)
+                fp_weather_list.append(session.weather_data)
 
             #Handling if the GP did not have FP session
             except:
                 print(f'No {fp} session found for {gp} {year}')
-                fp_sessions.append(pd.DataFrame())
-                fp_weather.append(pd.DataFrame())
+                fp_sessions_list.append(pd.DataFrame())
+                fp_weather_list.append(pd.DataFrame())
 
         #Combining list of DataFrames into one DataFrame
-        fp_sessions = pd.concat(fp_sessions, ignore_index=True)
-        fp_weather = pd.concat(fp_weather, ignore_index=True)
+        fp_sessions = pd.concat(fp_sessions_list, ignore_index=True)
+        fp_weather = pd.concat(fp_weather_list, ignore_index=True)
 
         if not fp_sessions.empty:
             fp_fastest_lap = fp_sessions['LapTime'].min()
@@ -57,9 +71,22 @@ class NameTBD:
 
 
 
-    def get_fastest_race_lap_and_pos(self, year, gp):
+    def get_race_features_and_weather(self, year, gp):
         '''
-        Function that returns the fastest lap of the race
+        Retrieves the fastest race lap, finishing positions features,
+        and average race-day weather.
+
+        This method loads the race session of a specified Grand Prix
+        and extracts the fastest race lap then converts it to seconds.
+        For races like the Belgian GP in 2021 where there is no fastest
+        lap, it returns NaN.
+
+        Furthermore, it collects the race results and calculates
+        "FasterThanTeammate" and "PointFinishRace". This is done
+        here to limit the amount of API calls.
+
+        Lastly, it collects race-day weather data and calculated the
+        average, it is then stored in a dictionary.
 
         Input
         ------
@@ -71,11 +98,21 @@ class NameTBD:
 
         Output
         ------
-        DataFrame???? Float
-            A DataFrame with ...???
+        tuple:
+            race_fastest_lap_sec (float):
+                Fastest lap of the race in seconds.
+            race_position_data (DataFrame):
+                DataFrame with:
+                    - FasterThanTeammate (int)
+                    - PointFinishRace (int)
+            race_weather_data (dictionary):
+                Dictionary with:
+                    - TrackTempAvgRace (float)
+                    - AirTempAvgRace (float)
+                    - RainAvgRace (float)
         '''
-        #Empty DataFrame
-        position_race_data = pd.DataFrame()
+        #Initialize
+        race_position_data = pd.DataFrame()
         race_weather_data = {
             'TrackTempAvgRace': np.nan,
             'AirTempAvgRace': np.nan,
@@ -88,7 +125,7 @@ class NameTBD:
             race_session.load()
         except:
             print(f'Could not load race session for {gp} {year}')
-            return np.nan, position_race_data, race_weather_data
+            return np.nan, race_position_data, race_weather_data
 
         try:
             #Find the fastest lap of the race
@@ -100,41 +137,72 @@ class NameTBD:
             #Get weather data
             df_race_weather = race_session.weather_data
         except:
-            return np.nan, position_race_data, race_weather_data
+            return np.nan, race_position_data, race_weather_data
 
-        #Convert laptime from DateTime to float (seconds)
-        #Races like the Belgian GP in 2021 returns NaN,
-        #since every lap of the race was completed under
-        #a safetycar, and therefore has no fastest lap.
         try:
+            #Convert laptime from DateTime to float (seconds)
             race_fastest_lap = df_race_fastest_lap['LapTime'].total_seconds()
 
-            position_race_data['FasterThanTeammateRace'] = (df_race_results['Position'] == df_race_results.groupby(['TeamName'])
-                                         ['Position'].transform('min')).astype(float)
-            position_race_data['PointFinishRace'] = (df_race_results['Position'] <= 10).astype(int)
+            #Faster than teamate in race
+            race_position_data['FasterThanTeammateRace'] = (df_race_results['Position'] == df_race_results.groupby(['TeamName'])
+                                         ['Position'].transform('min')).astype(int)
 
+            #Finish in point (top 10 finish)
+            race_position_data['PointFinishRace'] = (df_race_results['Position'] <= 10).astype(int)
+
+            #Weather data
             race_weather_data = {'TrackTempAvgRace': df_race_weather['TrackTemp'].mean(),
                                  'AirTempAvgRace': df_race_weather['AirTemp'].mean(),
                                  'RainAvgRace':  df_race_weather['Rainfall'].mean()}
 
-            return race_fastest_lap, position_race_data, race_weather_data
+            return race_fastest_lap, race_position_data, race_weather_data
         except:
-            return np.nan, position_race_data, race_weather_data
+            return np.nan, race_position_data, race_weather_data
 
-
-    def get_fastest_laps(self, year, gp):
+    def faster_then_teammate_FP(self, data):
         '''
-        Collects FP1, FP2 and FP3 data from
-        the FastF1 API and cleans it. The
-        collect the data from all three
-        practice sessions. For all session
-        it removes deleted laps and
-        laps times with NaN-value. For
-        each driver the function then finds
-        the fastest lap preformed by that
-        driver for all three session. At
-        last it combines all drivers fastest
-        lap for all three sessions.
+        Adds 'FasterThenTeammate' column to dataframe.
+
+        Input
+        ------
+        data: DataFrame
+            An almost complete dataset.
+
+        Output
+        ------
+        DataFrame
+            Same DataFrame as input with a added
+            'FasterThanTeammateFP' column.
+        '''
+        data['FasterThanTeammateFP'] = (
+            (data['FastestFPLap'] == data.groupby(['Year','GP', 'Team'])['FastestFPLap']
+            .transform('min'))
+            .astype(float)
+            )
+
+        #Set NaN where only one teammate had a valid lap
+        only_one_driver = data.groupby(['Year','GP','Team'])['DriverNumber'].transform('count') == 1
+        data.loc[only_one_driver, 'FasterThanTeammateFP'] = np.nan
+
+        return data
+
+
+    def create_skeleton_dataset(self, year, gp):
+        '''
+        Collects FP1, FP2 and FP3 data from the FastF1 API and cleans it.
+        For all session it removes deleted laps and laps times with NaN-value.
+        For each driver the method then finds the fastest lap preformed by that
+        driver for all three session, and combines all drivers fastest lap for
+        all three sessions.
+
+        The method also calculates the mean of all the weather data.
+
+        Furthermore, the method calculated the aggregated statistics for all push
+        laps. Push laps here are all laps that are within 2 seconds of the
+        drivers fastest lap.
+
+        Finally, the method adds all this in a DataFrame along with DriverNumber,
+        Team and GP. This DataFrame is the skeleton of the final dataset.
 
         Input
         ------
@@ -147,10 +215,20 @@ class NameTBD:
         Output
         ------
         DataFrame
-            A DataFrame with driver number, session and lap
-            time in seconds
+            A DataFrame with:
+                - DriverNumber (string)
+                - Team (string)
+                - FastestFPLap (float)
+                - MeanFPLaps (float)
+                - StdFPLaps (float)
+                - DeltaBestFPLap (float)
+                - TrackTempAvgFP (float)
+                - AirTempAvgFP (float)
+                - RainAvgFP (float)
+                - GP (string)
+
         '''
-        fp_sessions, fp_fastest_lap_sec, fp_weather = self.get_practice_laps(year, gp)
+        fp_sessions, fp_fastest_lap_sec, fp_weather = self.get_practice_features_and_weather(year, gp)
 
         #Empty dataframe with columns for driver and their fastest lap
         valid_driver_fastest_lap = pd.DataFrame(columns=['DriverNumber',
@@ -254,6 +332,39 @@ class NameTBD:
         return valid_driver_fastest_lap
 
     def get_data_from_api(self, years):
+        '''
+        The method takes a list of seasons and for each season
+        gets the schedule. With this schedule it find every
+        GP that took place that year. It then goes through all
+        the GPs. For every GP it collect the data for the final
+        dataset. Once finished the final dataset get written as
+        a .csv file with the name 'F1_data.csv'. The columns of
+        this file is
+            - DriverNumber
+            - Team
+            - FastestFPLap
+            - MeanFPLaps
+            - StdFPLaps
+            - DeltaBestFPLap
+            - TrackTempAvgFP
+            - AirTempAvgFP
+            - RainAvgFP
+            - GP
+            - FastestLapRace
+            - Year
+            - TrackTempAvgRace
+            - AirTempAvgRace
+            - RainAvgRace
+            - FasterThanTeammateRace
+            - PointFinishRace
+            - FasterThanTeammateFP
+
+        Input
+        ------
+        years: list[int]
+            List of seasons to collect (e.g. [2024, 2023, 2022]).
+
+        '''
 
         #Empty list to collect all the DataFrames
         list_of_data = []
@@ -271,8 +382,8 @@ class NameTBD:
 
             #Adding fastest FP and Race laps and year gp took place
             for gp in gps:
-                fastest_lap_of_race, position_race_data, weather_race_data = self.get_fastest_race_lap_and_pos(year, gp)
-                df_fp_data = self.get_fastest_laps(year, gp)
+                fastest_lap_of_race, position_race_data, weather_race_data = self.get_race_features_and_weather(year, gp)
+                df_fp_data = self.create_skeleton_dataset(year, gp)
                 df_fp_data['FastestLapRace'] = fastest_lap_of_race
                 df_fp_data['Year'] = year
                 df_fp_data['TrackTempAvgRace'] = weather_race_data['TrackTempAvgRace']
@@ -291,23 +402,7 @@ class NameTBD:
         data = self.faster_then_teammate_FP(data)
 
         #Convert DataFrame to csv file
-        data.to_csv('F1_data_new_2025.csv', index=False)
-
-    def faster_then_teammate_FP(self, data):
-        '''
-        Adds 'FasterThenTeammate' column to dataframe
-        '''
-        data['FasterThanTeammateFP'] = (
-            (data['FastestFPLap'] == data.groupby(['Year','GP', 'Team'])['FastestFPLap']
-            .transform('min'))
-            .astype(float)
-            )
-
-        #Set NaN where only one teammate had a valid lap
-        only_one_driver = data.groupby(['Year','GP','Team'])['DriverNumber'].transform('count') == 1
-        data.loc[only_one_driver, 'FasterThanTeammateFP'] = np.nan
-
-        return data
+        data.to_csv('F1_data.csv', index=False)
 
 if __name__ == '__main__':
     #years = [2024, 2023, 2022, 2021, 2019]
