@@ -144,8 +144,9 @@ class DataAcquisition:
             race_fastest_lap = df_race_fastest_lap['LapTime'].total_seconds()
 
             #Faster than teamate in race
-            race_position_data['FasterThanTeammateRace'] = (df_race_results['Position'] == df_race_results.groupby(['TeamName'])
-                                         ['Position'].transform('min')).astype(int)
+            race_position_data['FasterThanTeammateRace'] = (
+                        df_race_results['Position'] == df_race_results.groupby(['TeamName'])
+                        ['Position'].transform('min')).astype(int)
 
             #Finish in point (top 10 finish)
             race_position_data['PointFinishRace'] = (df_race_results['Position'] <= 10).astype(int)
@@ -407,5 +408,5 @@ class DataAcquisition:
 if __name__ == '__main__':
     #years = [2024, 2023, 2022, 2021, 2019]
     years = [2025]
-    obj = NameTBD()
+    obj = DataAcquisition()
     obj.get_data_from_api(years)
